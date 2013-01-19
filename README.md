@@ -1,9 +1,3 @@
-## mmcgrana.github.com
-
-Technical blog.
-
-Post content &copy; 2010 Mark McGranaghan.
-
 HTML and CSS adopted from [Jekyll](https://github.com/mojombo/jekyll).
 
 
@@ -20,5 +14,5 @@ $ open http://127.0.0.1:4000/
 
 ```bash
 $ git push github master
-$ open http://mmcgrana.github.com
+$ open http://econner.github.com
 ```
