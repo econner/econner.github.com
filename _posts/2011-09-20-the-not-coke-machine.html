@@ -1,0 +1,323 @@
+---
+type: post
+layout: post
+title: The Not Coke Machine
+tags:
+- Amazon AWS
+- Programming
+meta:
+  _pingme: "1"
+  _edit_last: "1"
+  _encloseme: "1"
+published: true
+status: publish
+---
+<p>
+The Not Coke Machine is the product of a realization that a mini-fridge provides little benefit beyond a store for cold, cheap beer.  It is an ethernet enabled kegerator with a built in flow meter that monitors how much beer has been poured through the tap.  It also shows in real time how much beer is being poured as it is poured.  Brohemia.  (or would this be Brogeneering?)
+</p>
+<h2>How It Works</h2>
+<p>
+The CO2 tank in a kegerator keeps the keg pressurized so that the beer can keep for a longer period of time than if you were just using a hand pump.  The CO2 also provides the push so that when you open the tap, beer flows automatically without needing any pumping.  So, if you insert a flow sensor in the beer line, you can monitor every pour of beer through the tap and keep track of how much is left in the keg.
+</p>
+<p>
+A small turbine provides the monitoring in a flow sensor.  As liquid passes through the sensor the turbine spins and outputs an electrical signal that can be monitored using a microcontroller, the Arduino.  The Arduino has attachments that allow it to be networked so that when a reading occurs a request can be sent to a server to record that reading.
+</p>
+<h2>Building the Kegerator</h2>
+<p>
+The first step in this whole ordeal was building the kegerator.  Parts needed:
+</p>
+<p>
+<ul>
+  <li>5lb CO2 Tank</li>
+  <li>CO2 Regulator</li>
+  <li>5/8-inch CO2 Tube</li>
+  <li>Keg Tap</li>
+  <li>3/8-inch Beer line</li>
+  <li>4 x 1/2-inch or less hose clamps</li>
+  <li>Keg faucet</li>
+  <li>Keg tap</li>
+</ul>
+</p>
+<h3>Making it Fit in the Fridge</h3>
+<p>
+I went about this in kind of a roundabout, and admittedly stupid, way.  I didn't properly measure the mini-fridge before hand and just kind of assumed that I would be able to fit a pony keg in it.  A pony keg is half the size of a full keg, but has the same diameter.  Both are about 17 inches wide and the pony keg is half the height of a normal keg.  I measured my fridge from the outside, saw that it was about 20 inches across and assumed that it would be fine so I bought <a href="">this kegerator conversion kit</a>.
+</p>
+<p>
+Well, it turns out that the inner dimensions are much less than the outer.  It's about 17 inches exactly across on the inside, but three things really burst my bubble once I considered the inner dimensions (after already buying the conversion kit).  First the temperature control was on the right-hand wall and it turns out that instead of being ambiently cooled, the fridge is cooled internally from the freezer compartment.  The freezer compartment shelf is actually what provides all the cooling:
+</p>
+<center>
+<img src="http://img469.imageshack.us/img469/4108/xv6vvvkskysjtz46qfrnuusud2.jpg" />
+</center>
+<p>
+Through it flows the coolant that is recycled by the fridge's motor.  This design is exactly why the freezer comparment always collects frost..and..is frozen.  It's the coldest part of the fridge so you can't get rid of that shelf.  Third, the motor in the back at the bottom subtracts some of the internal volume of the fridge..that's why there's only a small drawer at the bottom.
+</p>
+<p>
+Kegs come in a variety of dimensions so I thought I might be able to find one that would work with all these variables.  The pony keg is just a little too wide and I didn't want to deal with trying to move and rewire the temperature control.  A 5-gallon keg has a smaller diameter (only about 9 inches) but is much taller, rising to between 23 to 26 inches.  So the pony keg wouldn't fit because of the temperature control and the five gallon keg wouldn't fit because of the freezer compartment.  The tap needed to extend up into that shelving area where the freezer was.
+</p><p>
+I figured I wasn't the first to try converting a mini-fridge of that size so I got on the Googles and found this video:
+</p>
+<center>
+<iframe width="420" height="315" src="http://www.youtube.com/embed/gnKJ8cHcuKg" frameborder="0" allowfullscreen></iframe>
+</center>
+<p>
+I followed his guide pretty closely and was able to bend the freezer compartment down in the same way:
+</p>
+<center>
+<img width="500" src="http://notcokem.com/media/images/blog/bent_freezer_shelf.jpg" />
+</center>
+<p>
+This was one of the more difficult pieces of the project because I had to be very careful not to force the main coolant line too much.  Apparently it's very easy to crack that line and it will totally ruin the fridge if you do.  A pair of pliers and a flathead screw driver were enough to bend it down though.  The fridge makes some funky noises now, but it's been running fine for a few days so I guess it worked.
+</p>
+<p>
+I also removed the door shelving in the same way shown in the video,
+</p>
+<center>
+<img src="http://notcokem.com/media/images/blog/door_removed.jpg" width="500" />
+</center>
+<p>
+With the shelf bent and the door shelving gone, I had enough space to fit the keg and CO2 tank inside so I went about filling the CO2 and getting the lines connected.
+</p>
+<h3>Connecting and Testing the Kegerator</h3>
+<p>
+I knew I needed to fill my CO2 tank, but the only experience I had had with it up to that point was in playing paintball.  I had always gotten my paintball tank filled at Sports Authority so I got my 5lb tank (which is significantly larger than any paintball tank) and lugged it over to the store.  It turns out that Sports Authority does not have enough pressure to fill a tank of that size.  The guy looked at me like I was crazy when I asked so I left the store and went back to the Googles to figure out where I could get the tank filled.
+</p>
+<p>
+Welding supplies were my answer.  It turns out you can take these big tanks to welding supply companies and trade the empty tank for a full one and just pay about $20 for the CO2.  I found <a href="http://www.madcogases.com/">Madco</a> and took my tank over and had a full one in about 10 minutes.  The guy was really friendly and taught me that the thread on any gas tank actually determines what kind of gas is inside.  So he could tell it was pure CO2 just by the type of fitting on the outside of the tank and that all CO2 regulators would fit those threads (God I wish programmers could be that consistent..everything would be compatible!).
+</p>
+<p>
+Once I had the full CO2 tank I decided that I needed to get a keg.  Everything I read online about kegging beer mentioned the use of so called cornelius (corny) kegs -- 5 gallon soda kegs that have a special kind of tap.  I actually found nothing contrary to this while I was researching so I wrongly assumed that all 5 gallon kegs were these corny kegs.  This assumption would come back to bite me later, but for now I just assumed that I could get a corny keg and use it to test the kegerator.
+</p>
+<p>
+I went to a local home brew supply store and bought a corny keg and the fittings needed to hook it up in the kegerator.  The corny keg and taps and CO2 tank all fit in the fridge so I was happy with that so I decided to go about mounting the faucet.
+</p>
+<p>
+To do this all you really need to do is saw a hole in the fridge (easier said than done).  My dad had given me a drill while I was home so I had that covered and just needed to get a hole saw of the right diameter.  I went to home depot and picked up a carbon hole saw which was cheaper than the alternative metal saw rated for drilling through metal.  The fridge door was metal though.  Doh.. well I tried it anyway and the saw was able to get through the door with lots of forcing and expletives.  Now I'm just not sure it's going to be able to get through anything else. Oh well, it was only a couple dollars so no big deal.
+</p>
+<p>
+Alright so my tap was mounted and it was time to test the lines.  I filled the corny keg with water and tapped it and was able to get water flowing through.  Figuring this was good enough, I decided to hook in the flow sensor.
+</p>
+<h2>Arduino and the Flow Meter</h2>
+<p>
+I first needed to make sure I could read from the flow sensor using the Arduino so I setup a test where I could pour water in a measuring cup through the line, have it run through the sensor, and come out into a bottle.  The code monitoring the flow could then be easily and repeatedly debugged.
+</p>
+<center>
+<img src="http://notcokem.com/media/images/blog/testing_setup.jpg" width="500" />
+</center>
+<p>
+The flow sensor turbine spins as liquid flows through it.  Each time it spins, a change in its magnetic field causes an electrical pulse that, when wired to the arduino, can be detected with software running on the microcontroller.  The number of pulses is proportional to the amount of liquid that passes through the tube and, with some math, you can find the volume of liquid passing through.  I followed <a href="http://www.seeedstudio.com/forum/viewtopic.php?f=4&t=989">this guide</a> on reading the liquid flow rate using the arduino.
+</p>
+<center>
+<img src="http://notcokem.com/media/images/blog/extending_wires.jpg" width="500" />
+</center>
+<h3>Networking the Arduino</h3>
+<p>
+The next step was to get the Arduino networked so the data could be saved somewhere meaningful.  To do this I used the Arduino ethernet shield, which comes with some great libraries for TCP connections.  All Arduinos operate with a simple loop function that runs over and over which can be made to listen for events.  At this point I was using that loop to monitor the flow so I just needed to add some code that would send a request to a server when the flow was detected to be greater than 0.
+</p>
+<center>
+<img src="http://notcokem.com/media/images/blog/arduino_sensor.jpg" width="500" />
+</center>
+<p>
+When you connect to a web server using a browser, you almost always establish a keep-alive connection.  This type of connection tells the machine that you're likely going to keep requesting pages so it should stay open to avoid the latency of having to reconnect.  This connection also comes with a timeout where the connection will close if no pages are requested within some interval.
+</p>
+<p>
+Since the sensor needed to have fairly good request resolution (i.e. make a lot of requests in a short period of time) I decided to use a keep alive connection.  Every iteration of the arduino loop looks to see if the connection has closed, and if so, it reopens the connection so that when there is flow in the sensor it can be sent to the server.
+</p>
+<p>
+When the sensor detects flow, a request telling the server the number of pulses in the last one second period is sent to the server.  If this request is subsequent to a previous request within 2 seconds, then the requests together are identified as part of one pour and the recorded number of pulses can be used to incrementally show how much liquid has been poured.
+</p>
+<p>
+Here's the code running on the arduino:
+</p>
+{% highlight cpp %}
+/*
+ * This sketch monitors a flow sensor and sends any readings greater
+ * than 0 to a server.
+ *
+ * Circuit:
+ *   - Ethernet shield attached to pins 10, 11, 12, 13
+ *   - Flow sensor attached to pin 2
+ *
+ * Adapted from code by
+ * David A. Mellis
+ * Charles Gantt
+ */
+
+#include <SPI.h>
+#include <Ethernet.h>
+
+byte mac[] = { 0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX };
+byte ip[] = { 192, 168, 1, 10 };
+byte server[] = { 50, 19, 92, 1 };
+
+Client client(server, 80);
+
+// measures rising edge of signal
+volatile int NbTopsFan;
+int Calc;
+// pin location of the sensor
+int hallsensor = 2;
+
+// interrupt that measures rising and falling edge of sensor
+void rpm () {
+    NbTopsFan++;
+}
+
+void setup() {
+    // start the Ethernet connection:
+    Ethernet.begin(mac, ip);
+    delay(1000);
+
+    //initialize digital pin 2 as an input
+    pinMode(hallsensor, INPUT);
+    Serial.begin(9600);
+    attachInterrupt(0, rpm, RISING);
+
+    if (client.connect()) {
+        Serial.println("connected");
+    } else {
+        Serial.println("connection failed");
+    }
+}
+
+void loop() {
+    NbTopsFan = 0;
+    // enable interrups
+    sei();
+    delay (1000);
+    // disable interrups
+    cli();
+    // (Pulse frequency x 60) / 7.5Q, = flow rate in L/hour
+    Calc = (NbTopsFan / 7.5);
+    Serial.print (Calc, DEC);
+    Serial.print (" L/hour\r\n");
+
+    // consume any data on the connection
+    while(client.available()) {
+          char c = client.read();
+          Serial.print(c);
+    }
+
+    if(!client.connected()) {
+        client.stop();
+        Serial.println("Not connected...");
+        if(client.connect()) {
+            Serial.println("Reconnected to server.");
+        }
+     }
+
+    if(NbTopsFan > 0) {
+        Serial.println("MAKING REQUEST!");
+        Serial.println(NbTopsFan, DEC);
+
+        // Make a HTTP request:
+        client.print("GET /flow?freq=");
+        client.print(NbTopsFan, DEC);
+        client.println(" HTTP/1.1");
+        client.println("Host: notcokem.com");
+        client.println("Connection: keep-alive");
+        client.println("Cache-Control: max-age=0");
+        client.println();
+    }
+}
+{% endhighlight %}
+<p>
+Yea, it's a GET request with side effects.  And anyone can post to that URL.  Meh..it's a kegerator I don't care much about security.  Also, for what it's worth, I'm using Django on Amazon's EC2 (just in case i need to scale my keg up, ya know ;-P) on the backend.
+</p>
+<p>
+At this point the keg was basically setup (only using water) so I made a video showing some of the basics:
+</p>
+<center>
+<iframe width="420" height="315" src="http://www.youtube.com/embed/TNqSf0u7gps" frameborder="0" allowfullscreen></iframe>
+</center>
+<h2>Making it Realtime</h2>
+
+<p>
+The final thing I wanted it to be able to do was show, in real time, how much was being poured as it was poured.  Here's the finished product:
+</p>
+<center>
+<iframe width="420" height="315" src="http://www.youtube.com/embed/xk1NpttwKvw" frameborder="0" allowfullscreen></iframe>
+</center>
+<p>
+This real time push uses a technology called comet.  If you use twitter, comet is used when you're browsing tweets and you see the notification "23 new tweets" or whatever without refreshing the page.  Those tweets occurred, in real time, since you started browsing.  Twitter is able to push a notification to you that more tweets have been posted.
+</p>
+<p>
+To accomplish this, I used an event driven server that interfaces well with Django called Orbited and the Stomp protocol for the socket connections that handle the real time back-and-forth.  Every connection to a website uses what's called a socket.  You can think of a socket like a mailbox.  You put a letter in at one end and it comes out the other.  To accomplish real time interaction, multiple mail boxes (sockets) are used so that one can receive any new data.
+</p>
+<p>
+Here is a bit of the code that handles the real time push if you are curious:
+</p>
+<p>
+On the server side,
+</p>
+{% highlight python %}
+conn = stomp.Connection()
+conn.start()
+conn.connect()
+conn.subscribe(destination='/pours', ack='auto')
+# ...
+pourjson = json.dumps({'pk': cur_pour.pk, 'size': cur_pour.size})
+conn.send(pourjson, destination='/pours')
+{% endhighlight %}
+<p>
+On the client,
+</p>
+{% highlight javascript %}
+$(document).ready(function() {
+    stomp = new STOMPClient();
+    var pourTimeout;
+
+    stomp.onopen = function(){
+        //console.log("opening stomp client");
+    };
+
+    stomp.onclose = function(c){
+        //alert('Lost Connection, Code: ' + c);
+    };
+
+    stomp.onerror = function(error){
+        alert("Error: " + error);
+    };
+
+    stomp.onerrorframe = function(frame){
+        alert("Error: " + frame.body);
+    };
+
+    stomp.onconnectedframe = function() {
+        console.log("Connected. Subscribing");
+        //alert("subscribing");
+
+        stomp.subscribe("/pours");
+    };
+
+    stomp.onmessageframe = function(frame){
+        var curPour = $.parseJSON(frame.body);
+    	$("#messages").html("<h1>Pouring..." + curPour.size + "</h1>")
+
+    	// clear the previous timeout..we are still pouring
+    	clearTimeout(pourTimeout);
+    	pourTimeout = setTimeout(function() {
+    	    $("#messages").html("");
+    	}, 3000)
+    };
+
+    stomp.connect('localhost', 61613);
+});
+{% endhighlight %}
+<p>
+Alright.. so at this point the kegerator poured, updates were recorded, and everything seemed great.  So I went out at got a keg of Blue Moon to test it with.
+</p>
+<h2>Woe the Corny Keg</h2>
+<p>
+Remember earlier how I said all my research suggested a corny keg is what I would get?  Well I was wrong.  It turns out that breweries sell 5 gallon kegs with the normal, standard type of keg tap you'd expect.  Corny kegs use a completely different system so my taps were all wrong.  Luckily the tap wasn't too hard to replace.
+</p>
+<h2>Woe the Foam</h2>
+<p>
+Kegs are finicky and the amount of foam in beer is all about temperature and pressure.  Foam is just CO2 gas and while the beer is under pressure you'd like most of that CO2 to stay in solution.  That is, you want it dissolved in the beer.  If you have pockets of CO2 in your keg and lines then you end up with foam everywhere.  As temperature is reduced, less pressure is needed to keep the right amount of CO2 in solution.  You therefore need the pressure and temperature of the keg to be balanced and the beer line needs to be at the same temperature as the keg.
+</p>
+<p>
+I had a lot of problems with foam (and am still having some).  The first culprit was that my CO2 line wasn't screwed on all the way.  I found that out when I got up this morning and half of the tank was gone (a full tank should last for at least five or more kegs).  I also lowered the temperature and have been playing with the pressure (and wasting a lot of beer...).  It's pretty good now, but not the best it could be.
+</p>
+<h2>That's It.  That's All.</h2>
+<p>
+All in all it was a really fun project.  The next step is probably to add a temperature monitor.  I'll get there eventually.  Check it out at <a href="http://notcokem.com/">http://notcokem.com/</a>.
+</p>

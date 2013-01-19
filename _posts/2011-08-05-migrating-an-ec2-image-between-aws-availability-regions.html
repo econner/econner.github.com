@@ -1,0 +1,202 @@
+---
+type: post
+layout: post
+title: Migrating an EC2 Image between AWS Availability Regions
+tags:
+- Amazon AWS
+- Programming
+meta:
+  _edit_last: "1"
+published: true
+status: publish
+---
+<p>
+Yesterday I got to experience the joy of migrating an ec2 image from the us-east region to the us-west region on ec2.  The best way to do this was to migrate the images through S3.  You'll find some guides about using rsync and copying everything over through ssh, but I think those were written before AWS introduced ec2-bundle-vol and ec2-migrate-image.
+</p>
+<p>
+Here are the steps we'll go through to migrate the image:
+</p>
+<p>
+<ol>
+	<li>Create and attach new volume to store bundled image</li>
+	<li>Bundle the current running volume into the newly attached volume</li>
+	<li>Upload bundle to S3 in source region</li>
+	<li>Migrate bundle to S3 in destination region</li>
+	<li>Register instance in destination region</li>
+	<li>Launch instance in destination region</li>
+</ol>
+</p>
+
+<h2>Preparation</h2>
+<p>
+You'll need a running instance of your AMI to do this, so launch one if you do not have one up.  The next thing to check is to make sure the ec2 command line tools are installed on your instance (they should be there by default).  Try the command,
+</p>
+{% highlight sh %}
+ec2-bundle-vol --help
+{% endhighlight %}
+<p>
+to be sure.
+</p>
+<p>
+You'll also need the private key and certificate files for your AWS account on the server so that you can issue admin commands using the ec2 command line tools.  These have to be regenerated each time you want to download them, so be sure to save them the first time you generate them. They can be found by going to My Account --> Security Credentials and clicking the X.509 Certificates tab under the Access Credentials heading.
+</p>
+<p>
+Go ahead and upload these to your running instance:
+</p>
+{% highlight sh %}
+scp -i mykey.pem pk-xxxx.pem ubuntu@ec2-xxx-xxx.compute.amazonaws.com:
+scp -i mykey.pem cert-xxxx.pem ubuntu@ec2-xxx-xxx.compute.amazonaws.com:
+{% endhighlight %}
+<h2>Create and attach new volume</h2>
+
+<p>
+Cool.  Now that everything is prepared for the migration, let's create and attach a new volume to hold our bundled volume.  Go ahead and create an empty volume and be sure to specify the same availability zone as the one in which your instance is running,
+</p>
+<center>
+<a href="http://ericwconner.com/wp-content/uploads/2011/08/create_volume.png"><img src="http://ericwconner.com/wp-content/uploads/2011/08/create_volume-300x124.png" alt="" title="create_volume" class="alignnone size-medium wp-image-441" /></a>
+</center>
+<p>
+The max size of the bundle will be 10GiB so just be sure that you leave enough space for the bundled volume.
+</p>
+<p>
+Next attach it to the running instance of the image,
+</p>
+<center>
+<a href="http://ericwconner.com/wp-content/uploads/2011/08/attach_volume.png"><img src="http://ericwconner.com/wp-content/uploads/2011/08/attach_volume-300x156.png" alt="" title="attach_volume" class="alignnone size-medium wp-image-440" /></a>
+</center>
+<p>
+Now we need to determine where the newly attached image was added.  The comment in red tells us that our linux kernel may rename our device so it won't be at /dev/sdg necessarily.  SSH into the instance and type the command,
+</p>
+{% highlight sh %}
+$ cat /proc/partitions
+ 202        1    8388608 xvda1
+ 202       80   12582912 xvdf
+{% endhighlight %}
+<p>
+Ok, so it was attached then at /dev/xdvf.  Let's mount the new volume:
+</p>
+<ol>
+
+<li>
+Create the filesystem on the partition
+{% highlight sh %}
+$ sudo mkfs -t ext3 /dev/xvdf
+{% endhighlight %}
+</li>
+
+<li>
+Create a mount point for the new volume,
+{% highlight sh %}
+$ sudo mkdir /mnt/backup
+{% endhighlight %}
+</li>
+
+<li>
+Mount the new volume
+{% highlight sh %}
+$ sudo mount /dev/xvdf /mnt/backup
+{% endhighlight %}
+
+<li>
+Check that everything worked,
+{% highlight sh %}
+$ df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/xvda1             8256952   5048364   2789160  65% /
+none                    295996       112    295884   1% /dev
+none                    303236         0    303236   0% /dev/shm
+none                    303236        48    303188   1% /var/run
+none                    303236         0    303236   0% /var/lock
+/dev/xvdf             12385456    161908  11594404   2% /mnt/backup
+{% endhighlight %}
+</li>
+
+</ol>
+<p>
+Perfect.  We've mounted a new partition to store our bundled volume.
+</p>
+
+<h2>Bundle Current Volume</h2>
+<p>
+Before bundling the volume, check on the architecture as we'll need to provide this to the bundle-vol command.
+</p>
+{% highlight sh %}
+$ uname -a
+(...etc...) x86_64 x86_64 x86_64 GNU/Linux
+{% endhighlight %}
+<p>
+Ok, now we just need to issue the ec2-bundle-vol command, (the -u option is your amazon aws account number)
+</p>
+{% highlight sh %}
+$ sudo ec2-bundle-vol -d /mnt/backup -k pk-xxxx.pem -u xxxx-xxxx-xxxx \
+	-c cert-xxx.pem
+Please specify a value for arch [x86_64]:
+{% endhighlight %}
+<p>
+If the default architecture value is correct, go ahead and hit return.  You'll see output about the initialization of the bundling process which will take quite awhile to complete.
+</p>
+
+<h2>Uploading the Bundle to S3</h2>
+<p>
+The next step is to transfer the bundle to S3 so that it can be migrated.  In this step you'll need your aws access key and secret which can be found under Account --> Security Credentials.  By default, the ec2-bundle-vol command creates a manifest file describing the image named image.manifest.xml in /mnt/backup.  We'll need this filename for the next command,
+</p>
+{% highlight sh %}
+$ ec2-upload-bundle -b my-us-standard-bucket \
+	-m /mnt/backup/image.manifest.xml -a access_key_id \
+	-s secret_key
+{% endhighlight %}
+
+<p>
+All of the parts that were just created by bundling the volume will be uploaded to S3.  In the meantime, figure out the region location you'd like to transfer the image to,
+</p>
+{% highlight sh %}
+$ ec2-describe-regions -C cert-xxxx.pem -K pk-xxxx.pem
+REGION     eu-west-1          ec2.eu-west-1.amazonaws.com
+REGION     us-east-1          ec2.us-east-1.amazonaws.com
+REGION     ap-northeast-1     ec2.ap-northeast-1.amazonaws.com
+REGION     us-west-1          ec2.us-west-1.amazonaws.com
+REGION     ap-southeast-1     ec2.ap-southeast-1.amazonaws.com
+{% endhighlight %}
+<p>
+In this tutorial, we'll use us-west-1.
+</p>
+
+<h2>Migrate Bundle to S3 Bucket in Destination Region</h2>
+
+<p>
+Now that the bundle has been uploaded to S3 in your source region, ensure that you have a bucket in S3 in your destination region to receive the image.  I'll call mine my-us-norcal-bucket.  Now, all we need to do is migrate the image from the source bucket to the destination bucket,
+</p>
+{% highlight sh %}
+$ ec2-migrate-image -K pk-xxxx.pem -C cert-xxxx.pem \
+	-o access_key_id -w secret_key \
+	--bucket my-us-standard-bucket \
+	--destination-bucket my-us-norcal-bucket \
+	--manifest image.manifest.xml --location us-west-1
+
+Downloading manifest image.manifest.xml from my-us-standard-bucket...OK
+Copying 'image.part.000' to 'my-us-standard-bucket/image.part.000'...OK
+Copying 'image.part.001' to 'my-us-standard-bucket/image.part.001'...OK
+Copying 'image.part.002' to 'my-us-standard-bucket/image.part.002'...OK
+...
+{% endhighlight %}
+<br/>
+
+
+<h2>Register image in the destination region</h2>
+<p>
+Finally we just need to register the image:
+</p>
+{% highlight sh %}
+$ ec2-register -K pk-xxxx.pem -C cert-xxxx.pem \
+	--region us-west-1 my-us-norcal-bucket/image.manifest.xml \
+	--name myimage
+{% endhighlight %}
+<p>
+That's it.  That's all.
+</p>
+
+
+
+
+
+

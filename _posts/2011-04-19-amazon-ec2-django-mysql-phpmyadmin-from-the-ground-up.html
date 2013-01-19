@@ -1,0 +1,135 @@
+---
+type: post
+layout: post
+title: Amazon EC2, Django, MySQL from the Ground Up
+tags:
+- Programming
+meta:
+  _edit_last: "1"
+published: true
+status: publish
+---
+<h2>Introduction</h2>
+<p>
+Here I am going to show you how to get a server set up on EC2 running mysql and django from the ground up.  I often find these kinds of guides difficult to follow because they tend to focus only on one component of the process and use setups that maybe incompatible with the tools you're working with.  To simplify the process I am going to show a complete setup from start to finish.  There are some finer details I won't go into like securing the server and setting up iptables, but you can head over to <a href="http://articles.slicehost.com/">Slicehost</a> for some great articles on the subject.  Ok, let's do it.
+</p>
+<h2>Amazon EC2</h2>
+<p>
+The first step you need to take is get an Amazon AWS account.  Once you've done that, sign into the management console and select the EC2 tab.  Along the left you'll see four headlines: Instances, Images, Elastic Block Store, and Networking &amp; Security.
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/ec2.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/ec2-1024x466.png" alt="" title="ec2" width="600" height="250" class="alignnone size-large wp-image-370" /></a>
+<p>
+For now we'll concern ourselves with the first two: instances and images.  The images tab has a sub-option: AMIs.  These Amazon Machine Images are disk images of operating systems with some useful utilities that you can launch as an instance.  An instance is just a machine image running in the elastic cloud.
+</p>
+<p>
+Go ahead and select AMIs.  On that page from the 'Viewing' box select 'EBS Images' and filter to the platform 'Ubuntu'.  We definitely want to set up an Ubuntu server and we chose EBS (Elastic Block Storage) because Amazon allows you to run really small instances, micro instances, that are virtually free. Let's select the latest Ubuntu Hardy image and launch it as instance.
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/amis.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/amis.png" alt="" title="amis" width="600" height="203" class="alignnone size-medium wp-image-369" /></a>
+<p>
+Select "micro" from the Instance Details modal dialog that pops up and hit Continue.
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/3.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/3.png" alt="" title="3" width="600" height="206" class="alignnone size-medium wp-image-364" /></a>
+<p>
+Nice.  You can hit continue on the next couple of dialogs.  These settings can be configured later and aren't important for our purposes now.  When you get to the 'Create Key Pair' dialog go ahead and create and download a new key.  This pair gives you a private key that you can use to authenticate over ssh to your server the first time without a password.  I'll call mine eric:
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/5.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/5.png" alt="" title="6" width="600" height="406" class="alignnone size-medium wp-image-367" /></a>
+<p>
+We need to add rules to our security group that allow access to SSH and HTTP.  The ones defined in the image below allow ssh and http access from anywhere.
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/6.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/6.png" alt="" title="6" width="600" height="406" class="alignnone size-medium wp-image-367" /></a>
+<p>
+On the last tab we can review the changes and then hit Launch.  Wooo.  Now we are getting somewhere.
+</p>
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/7.png"><img src="http://ericwconner.com/wp-content/uploads/2011/04/7.png" alt="" title="6" width="600" height="406" class="alignnone size-medium wp-image-367" /></a>
+<p>
+It will take a minute for the new instance to launch, but once up it will show in your instances pane.  This page shows the details we just configured for the instance as well as a public DNS we can use to access it.  Let's go ahead and fire up an ssh session to our server.  Navigate to wherever you downloaded the private key and initialize the session like so:
+</p>
+{% highlight sh %}
+$ ssh -i eric.pem ubuntu@ec2-##-##-##-##.compute-1.amazonaws.com
+{% endhighlight %}
+<p>
+Cool.  Now that we have a session we'll want to first make sure aptitude is up to date:
+</p>
+{% highlight sh %}
+$ sudo aptitude update
+{% endhighlight %}
+<p>
+Once we've done that let's get cracking and install some utilities:
+</p>
+{% highlight sh %}
+$ sudo aptitude install python-django
+$ sudo aptitude install mysql-server
+$ sudo aptitude install python-mysqldb
+$ sudo aptitude install libapache2-mod-wsgi
+{% endhighlight %}
+
+<h2>Create a Django Application</h2>
+<p>
+Run django-admin to create a new project in a directory under your home directory:
+</p>
+
+{% highlight sh %}
+$ mkdir srv
+$ cd srv
+$ django-admin startproject mysite
+{% endhighlight %}
+<p>
+You'll need to configure your django settings to suit your database and application needs.
+</p>
+
+<h2>Configuring mod_wsgi</h2>
+<p>
+Alright now that we have a starter django app going let's configure <a href="http://code.google.com/p/modwsgi/">mod_wsgi</a> to serve our application.  We need to enable a site on apache to do this so let's create a virtual host.
+</p>
+
+{% highlight sh %}
+$ sudo nano /etc/apache2/sites-available/mysite.com
+{% endhighlight %}
+<p>
+Copy the following into the new file:
+</p>
+
+{% highlight sh %}
+<VirtualHost *:80>
+        ServerName mysite.com
+        ServerAlias www.mysite.com
+        WSGIScriptAlias / /home/demo/public_html/mysite.com/mysite.wsgi
+</VirtualHost>
+{% endhighlight %}
+
+<p>
+Now that we've defined a wsgi script to serve our app we need to create that script,
+</p>
+
+{% highlight sh %}
+$ nano /home/demo/public_html/mysite.com/mysite.wsgi
+{% endhighlight %}
+
+<p>
+Copy the following configuration to that file
+</p>
+
+{% highlight python %}
+import os
+import sys
+
+sys.path.append('/home/demo/public_html/mysite.com/')
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings'
+
+import django.core.handlers.wsgi
+
+application = django.core.handlers.wsgi.WSGIHandler()
+{% endhighlight %}
+
+<p>
+Finally we need to enable the site and reload the apache configuration
+</p>
+
+{% highlight sh %}
+$ sudo a2ensite mysite.com
+$ sudo /etc/init.d/apache2 reload
+{% endhighlight %}
+<p>
+That's it!  You should now see the django start page when you navigate to your site.
+</p>

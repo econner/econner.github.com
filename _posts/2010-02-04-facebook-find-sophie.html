@@ -1,0 +1,256 @@
+---
+type: post
+layout: post
+title: Facebook Find Sophie
+tags:
+- C++
+meta:
+  _edit_last: "1"
+published: true
+status: publish
+---
+<p style="text-align: left;">Because I had spent some time playing around with graph search problems in CS221 last quarter, I decided to try my hand at Facebook's <a href="http://www.facebook.com/careers/puzzles.php#!/careers/puzzles.php?puzzle_id=11">Find Sophie </a>problem.  As it turns out the problem is a bit more involved and difficult to solve than it looks on the surface (as most CS problems are).  The problem is somewhat similar to the famous NP-Hard (read: &amp;*D&amp;ing hard to do quickly) Traveling Salesman problem which attempts to find the minimum cost tour of a graph.</p>
+<p style="text-align: left;">Sophie asks you to find the expected cost of touring a weighted graph given a location of interest (e.g. where Sophie is hiding).  The example input given is:</p>
+
+{% highlight sh %}
+4
+front_door    .2
+in_cabinet    .3
+under_bed     .4
+behind_blinds .1
+5
+front_door under_bed     5
+under_bed  behind_blinds 9
+front_door behind_blinds 5
+front_door in_cabinet    2
+in_cabinet behind_blinds 6
+{% endhighlight %}
+<p style="text-align: left;">which has an expected value of 6.00.  Admittedly it took me a little while to see why this first example is 6.00, but it makes sense when you work the math out by hand (and actually find the path that produces 6.00).  The path is:</p>
+
+{% highlight sh %}
+front_door -> in_cabinet -> font_door -> under_bed -> behind_blinds
+{% endhighlight %}
+
+<p style="text-align: left;">and the expected cost is:</p>
+
+<p>[math] 0.2(0) + 0.3(2) + 0.4(2+2+5) + 0.1(2+2+5+9)[/math]</p>
+
+<p style="text-align: left;">so the distance accumulates as you visit more nodes.</p>
+<p style="text-align: left;">My solution uses the Dijkstra's shortest path algorithm to calculate the shortest path between every pair of nodes first.  This pre-calculation is important so that you can revisit nodes without accidentally entering an infinite loop.  I then use backtracking recursion to search for the shortest path.  Here is my C++ solution:</p>
+
+{% highlight cpp %}
+#include <iostream>
+#include <fstream>
+#include <cassert>
+#include "string.h"
+#include <stdlib.h>
+#include <map>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <vector>
+#include <limits>
+#include <queue>
+using namespace std;
+
+void readInputFile(char* filename);
+void getLocations(ifstream & infile);
+vector<string> tokenizeStr(string str);
+void dijkstras(int sourceIndex);
+void recoverShortestPaths();
+void findRoute(int curLoc, double distanceSoFar, double expectedValue);
+bool ensureConnected();
+void initializeDistanceMatrix();
+
+// Type used to order nodes in dijkstra's algorithm
+struct distElem {
+    int index;
+    double distance;
+};
+struct sort_by_distance {
+    bool operator () (const distElem& lhs , const distElem& rhs)
+    {
+        return lhs.distance < rhs.distance;
+    }
+};
+
+// Global variables used by all methods
+int num_locations;
+int num_edges;
+map<string, int> locations_map;
+double *locations_arr;
+bool *locations_visited;
+double **distance_matrix;
+double double_max = numeric_limits<double>::infinity();
+double best_ev = double_max;
+
+int main(int argc, char *argv[]) {
+    assert(argv[1] != NULL);
+
+    char *filename = (char*)argv[1];
+    readInputFile(filename);
+    recoverShortestPaths();
+
+    if(ensureConnected())
+        findRoute(0, 0, 0);
+
+    printf("%4.2fn", best_ev);
+}
+
+/*
+* Returns a vector of tokens for a given input string separated
+* by some variable amount of whitespace.
+*/
+vector<string> tokenizeStr(string str) {
+    vector<string> tokens;
+    istringstream iss(str);
+    copy(istream_iterator<string>(iss),
+         istream_iterator<string>(),
+         back_inserter<vector<string> >(tokens));
+    return tokens;
+}
+
+/*
+* Ensures that the graph is connected after running dijkstras algorithm
+* for each node.
+*/
+bool ensureConnected() {
+    for(int i = 0; i < num_locations; i++)
+        for(int j = num_locations-1; j > i; j--)
+            if(distance_matrix[i][j] == double_max) {
+                best_ev = -1;
+                return false;
+            }
+    return true;
+}
+
+/*
+* Dijkstras algorithm to calculate the shortest path between the
+* given source node and every other node.  This is run for every
+* pair of nodes.
+*/
+void dijkstras(int sourceIndex) {
+    vector<distElem> nodes;
+    for(int i = 0; i < num_locations; i++) {
+        distElem curElem;
+        curElem.distance = distance_matrix[sourceIndex][i];
+        curElem.index = i;
+        nodes.push_back(curElem);
+    }
+    sort (nodes.begin(), nodes.end(), sort_by_distance());
+
+    while(!nodes.empty()) {
+        distElem curElem = nodes[0];
+        double minDistance = curElem.distance;
+        int minIndex = curElem.index;
+        nodes.erase(nodes.begin());
+
+        for(int i = 0; i < num_locations; i++) {
+            if(i == minIndex || i == sourceIndex ||
+                    distance_matrix[minIndex][i] == double_max)
+                continue;
+
+            double altDist = minDistance + distance_matrix[minIndex][i];
+            if(altDist < distance_matrix[sourceIndex][i]) {
+                distance_matrix[sourceIndex][i] = altDist;
+                distance_matrix[i][sourceIndex] = altDist;
+            }
+        }
+    }
+}
+
+/*
+* Uses backtracking recursion to enumerate the possible traversals
+* of the graph, keeping track of the expected value.
+*/
+void findRoute(int curLoc, double distanceSoFar, double expectedValue) {
+    locations_visited[curLoc] = true;
+    expectedValue += locations_arr[curLoc]*distanceSoFar;
+
+    bool at_end = true;
+    for(int i = 1; i < num_locations; i++) {
+        if(locations_visited[i] == false) {
+            at_end = false;
+
+            if(expectedValue < best_ev)
+                findRoute(i,
+                          distanceSoFar + distance_matrix[curLoc][i],
+                          expectedValue);
+        }
+    }
+
+    if(at_end) {
+        if(expectedValue < best_ev) {
+            best_ev = expectedValue;
+        }
+    }
+
+    locations_visited[curLoc] = false;
+}
+
+/*
+* Repeatedly calls dijkstras algorithm to fill our distance matrix with
+* shortest path pairs.
+*/
+void recoverShortestPaths() {
+    for(int i = 0; i < num_locations; i++)
+        dijkstras(i);
+}
+
+void initializeDistanceMatrix() {
+    distance_matrix = new double*[num_locations];
+    for(int i = 0; i < num_locations; i++) {
+        distance_matrix[i] = new double[num_locations];
+        for(int j = 0; j < num_locations; j++) {
+            distance_matrix[i][j] = double_max;
+        }
+    }
+}
+
+/*
+* Reads the input file and sets up the necessary variables.
+*/
+void getLocations(ifstream & infile) {
+    string curLine;
+    getline(infile, curLine);
+    vector<string> tokens;
+
+    num_locations = atoi(curLine.c_str());
+    locations_arr = new double[num_locations];
+    locations_visited = new bool[num_locations];
+    for(int i = 0; i < num_locations; i++) {
+        getline(infile, curLine);
+
+        tokens = tokenizeStr(curLine);
+        locations_map[tokens[0]] = i;
+        locations_arr[i] = atof(tokens[1].c_str());
+        locations_visited[i] = false;
+    }
+
+    getline(infile, curLine);
+    num_edges = atoi(curLine.c_str());
+    initializeDistanceMatrix();
+
+    int row_index, col_index;
+    for(int i = 0; i < num_edges; i++) {
+        getline(infile, curLine);
+
+        tokens = tokenizeStr(curLine);
+        row_index = locations_map[tokens[0]];
+        col_index = locations_map[tokens[1]];
+
+        distance_matrix[row_index][col_index] = atof(tokens[2].c_str());
+        distance_matrix[col_index][row_index] = atof(tokens[2].c_str());
+    }
+}
+
+void readInputFile(char* filename) {
+    assert(filename != NULL);
+
+    ifstream infile;
+    infile.open(filename);
+
+    getLocations(infile);
+
+}
+{% endhighlight %}

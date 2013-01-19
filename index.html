@@ -1,0 +1,17 @@
+---
+layout: default
+title: Eric Conner
+---
+
+<div id="home">
+  <ul class="posts">
+    {% for post in site.posts %}
+      <li>
+      	<span class="post-date">[{{ post.date | date_to_string }}]</span>
+      	<span class="post-link">
+      		<a href="{{ post.url }}">{{ post.title }}</a>
+      	</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

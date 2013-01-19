@@ -1,0 +1,131 @@
+---
+type: post
+layout: post
+title: Markov Chains and PageRank
+tags:
+- Programming
+meta:
+  _edit_last: "1"
+published: true
+status: publish
+---
+<h2>Introduction</h2>
+<p>Most modern search engines operate on a three step process,</p>
+<ol>
+	<li>User types in a query</li>
+	<li>Engine locates all pages matching that query in its index</li>
+	<li>The results are ordered in a useful way and returned to the user [1]</li>
+</ol>
+<p>
+The Google search engine’s main improvement over others was a novel method for ranking these results called PageRank. Consider a page [math]u[/math] which has hyperlinks to some set of pages [math]F_u[/math]. Brin and Page considered each outgoing link from [math]u[/math] to a page in [math]F_u[/math] as a recommendation by page [math]u[/math] for a page in [math]F_u[/math] (or as a citation of the page in [math]F_u[/math] by page [math]u[/math]). Presumably authors of important pages on a topic would only link to other important pages [2].
+</p>
+<p>
+Every page on the internet has a set of forward links, [math]F_u[/math], and a set of back links, [math]B_u[/math]. Forward links are those pages to which the page links and back links are the set of pages which link to [math]u[/math]. The figure below illustrates this relationship.
+</p>
+
+<center><a href="http://ericwconner.com/wp-content/uploads/2011/04/figure1.png"></a><a href="http://ericwconner.com/wp-content/uploads/2011/04/figure1.png"><img class="alignnone size-full wp-image-384" title="figure1" src="http://ericwconner.com/wp-content/uploads/2011/04/figure1.png" alt="" width="500" height="278" /></a></center>
+<h2>Original Definition of PageRank</h2>
+<p>
+The first version of PageRank described by Brin and Page in their seminal 1998 paper is a recursive relationship in which the rank of [math]u[/math], [math]R(u)[/math], is calculated based on each of the pages [math]v[/math] in [math]B_u[/math],
+</p>
+<p style="text-align: center;">[math]R(u) = c \sum_{v\in B_u}\frac{R(v)}{N_v}[/math]</p>
+<p>
+where [math]N_v = |F_v|[/math], the number of forward links from [math]v[/math] and the constant [math]c[/math] is a normalizing factor so that the total rank of all web pages is constant. In this way, the rank of [math]u[/math] depends on the importance of as well as the number of pages recommended by each page in [math]u[/math]’s set of back links. Therefore, the page [math]u[/math] will gain a lot of importance from an important page in [math]B_u[/math] which has just a few outward links. Conversely, a page with many forward links that isn’t very important will not contribute much to [math]u[/math]’s rank. This ingenious definition prevents page authors from gaming the algorithm since a page’s importance depends on the network of all of its recommendations [2].
+</p>
+<p>
+There are two problems with this simple definition. First, it is unclear how to distribute the weight of pages that are dead ends and, second, it is possible for certain loops in the graph to become rank sinks. As an example, imagine that two pages form a loop consisting of one forward link from each page to the other. Then, during an iterative calculation of the PageRank, the loop will accumulate weight since it has no outbound edges.
+</p>
+
+<center><a href="http://ericwconner.com/wp-content/uploads/2011/04/rank_sink.png"><img class="size-full wp-image-386 aligncenter" title="rank_sink" src="http://ericwconner.com/wp-content/uploads/2011/04/rank_sink.png" alt="" width="292" height="80" /></a></center>
+<p style="text-align: left;">To overcome this problem, in their original formulation, Brin and Page define a source of rank E, a vector over pages on the internet, which is usually initialized as a uniform probability distribution over the number of pages (e.g. each entry [math]E(i) = frac{1}{|E|}[/math]).
+The resultant formula then becomes,</p>
+<p style="text-align: center;">[math]R(u) = c \sum_{v \in B_u} \frac{R(v)}{N_v} + cE(u)[/math]</p>
+<p style="text-align: left;">such that [math]c[/math] is maximized and the sum of all entries in [math]R[/math] is 1. Intuitively, the vector [math]E[/math] represents the probability that instead of going from [math]u[/math] to [math]v[/math], we jump to a random page on the internet [2].</p>
+
+<h2>Markov Chain Interpretation of PageRank</h2>
+<p>
+The vector [math]E[/math] also points to another way to interpret the PageRank formulation. Imagine a web surfer who starts from a random page and clicks a link at random on each new page he or she encounters. This random clicking can be modeled by a Markov chain whose states, [math]i = 1,\dots,N[/math] are pages where the probability of going from state [math]j[/math] to state [math]i[/math] is given by,
+</p>
+<center>
+[math]p_{j,i} = \frac{1}{N_j}  \text{ if j links to i}[/math]
+[math]p_{j,i} = 0 \text{ otherwise}[/math]
+</center>
+<p>
+The PageRank of page u is then defined by the stationary distribution of this random walk. We gauge the importance of a page by determining the probability of finding the random surfer on that page at any given time.
+</p>
+<p>
+To handle rank sinks, we introduce a restart state [math]i = 0[/math] and some parameter [math]r[/math]. Modify the random walk so that, instead of following links, the surfer moves to the restart state with probability [math]p_{i,0} = (1-r)[/math]. The probability of going from state [math]0[/math] to state [math]i[/math] is then [math]p_{0,i} = r[/math] since we have a fixed probability [math]1-r[/math] of remaining in the restart state. Introducing this restart state ensures that the Markov chain is irreducible and aperiodic since any state can be reached from the restart state. Intuitively, this state corresponds to a random surfer who periodically gets bored and jumps to a URL at random on the web [5].
+</p>
+<p>
+To handle dead ends, we assume that any page which has no forward links instead links to every page on the internet. Assuming this structure ensures that the page’s weight will be distributed evenly over all pages on the web and allow the walk to continue [5].
+</p>
+<p>
+Now, since the chain is irreducible, aperiodic, and has a finite number of states, there exists a stationary distribution [math]\pi[/math] on the chain that satisfies the following two equations,
+</p>
+<p style="text-align: center;">[math]\pi_i = \sum_{j = 0}^{N} \pi_j p_{j,i}[/math]
+[math]\sum_{i = 0}^{N} \pi_i = 1[/math]</p>
+<p>
+Expanding this using the Markov chain we set up,
+</p>
+<p style="text-align: center;">
+[math]\pi_0 = \sum_{j = 0}^{N} \pi_j p_{j,0} = (1-r) \sum_{j = 0}^{N} \pi_j = (1-r)[/math]
+and, for [math]\pi_i[/math],
+[math]\pi_i = \pi_0 p_{0,i} + \sum_{j=1}^N \pi_j p_{j,i}[/math]
+[math]= (1-r) * \frac{r}{N} + r\sum_{j \in B_i} \pi_j p_{j,i}[/math]
+[math]= (1-r) * \frac{r}{N} + r\sum_{j \in B_i} \pi_j \frac{1}{N_j}[/math]
+</p>
+<p>
+Divide both sides by r,
+</p>
+<p style="text-align: center;">[math]\frac{\pi_i}{r} = \frac{1-r}{N} + \sum_{j \in B_i} \frac{\pi_j}{r} \frac{r}{N_j}[/math]</p>
+<p>
+Now, let the page rank [math]R(i) = \frac{\pi_i}{r}[/math]
+</p>
+<p style="text-align: center;">[math]R(i) = \frac{1-r}{N} + \sum_{j \in B_i} R(j) \frac{r}{N_j}[/math]</p>
+Hence, our Markov chain approximates the original formulation of the PageRank algorithm when E is chosen to be uniform over all web pages. The rank is proportional to the stationary distribution of the chain [5].
+<h2>A Simple Example</h2>
+<p>
+Consider a network consisting of 3 pages A, B, and C such that A and B are linked to C which is a dead end. Here we can see that the random surfer will end up in state C and be stuck there. The stationary probability [math]\pi_C[/math] would thus be 1 while that of A and B would be 0 as state C had accumulated all of the weight. Also, if there were an additional rank sink (such as a loop) then weight would accumulate there as well.
+</p>
+<p style="text-align: center;">
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/automaton.png"><img class="alignnone size-full wp-image-388" title="automaton" src="http://ericwconner.com/wp-content/uploads/2011/04/automaton.png" alt="" width="294" height="152" /></a>
+</p>
+<p>
+To remedy this, we introduce the restart state D as well as two green edges which transform C from a dead end into a universal linker. The random surfer model assumes that C, which was a dead end, instead links to every page in the network so that its weight will be distributed fairly among those pages.
+</p>
+<p style="text-align: center;">
+<a href="http://ericwconner.com/wp-content/uploads/2011/04/automaton_extra_state.png"><img class="alignnone size-medium wp-image-385" title="automaton_extra_state" src="http://ericwconner.com/wp-content/uploads/2011/04/automaton_extra_state-300x218.png" alt="" width="300" height="218" /></a>
+</p>
+<p>
+In this example, we let the parameter r = 0.85, which is the value widely thought to be used at Google, so that, with probability (1 − r) = 0.15, the random walk goes to the restart state D. Otherwise, with probability r = 0.85, the random walk continues along an outgoing edge from the current page.  We get a system of equations for the ranks of the pages,
+</p>
+<p style="text-align: center;">
+[math]R(A) = \frac{1 - 0.85}{3} + 0.85 * \frac{R(C)}{2}[/math]
+[math]R(B) = \frac{1 - 0.85}{3} + 0.85 * \frac{R(C)}{2}[/math]
+[math]R(C) = \frac{1 - 0.85}{3} + 0.85(R(A) + R(B))[/math]
+</p>
+<p>
+and we get R(A) = R(B) = 0.29 and R(C) = 0.42, which sum to 1 and which make intuitive sense. Since both A and B link to page C, it makes sense that page C should have double the weight of both A and B.
+</p>
+
+<h2>Calculating PageRank</h2>
+<p>
+For larger and larger numbers of pages it is not straightforward to setup and solve a system of equations for the rankings. Performing Gaussian elimination with millions of variables would take eons, even for a very fast computer [1]. Instead, define the matrix P so that the ij entry is [math]frac{1}{n_j}[/math] if page j has a link to page i and 0 otherwise. We can then define a vector over the rankings which satisfies the equation,
+</p>
+
+[math]{\bf v} = P{\bf v}[/math]
+
+<p>
+Thus, the ranking vector v is an eigenvector of P with eigenvalue 1. Since some of the values in P are 0, however, this eigenvector may not be unique and there also may be many pages tied with a score of 0. To fix this, we introduce an N by N teleportation matrix each of whose entries is 1/N that corresponds to a surfer randomly choosing a URL as discussed above. With some probability r the surfer continues the random walk and with (1 − r) he chooses to teleport. We can thus define a matrix Q,
+</p>
+[math]Q = rP + (1-r)T[/math]
+<p>
+This new matrix will not have any zeros and will have a unique eigenvector v with eigenvalue 1.
+</p>
+<h2>References</h2>
+[1] Brian White, Math 51 Lectore Notes: How Google Ranks Web Page. Stanford University, 2006.
+[2] Larry Page and Sergey Brin, The PageRank Citation Raking: Bringing Order to the Web. Stanford University, January 29, 1998.
+[3] Amy N. Langville and Carl D. Meyer, Deeper Inside PageRank. October 20, 2004.
+[4] Nelly Litvak, Markov Chain Analysis of the PageRank Problem. University of Twente.
+[5] Jia Li, Markov Chain Interpretation of Google Page Rank. December 1, 2005.
+[6] Weijun Xu, Tutorial Notes, Markov Chains. January 30, 2011.
