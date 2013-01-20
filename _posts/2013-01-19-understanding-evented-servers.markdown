@@ -25,9 +25,9 @@ between you (the client) and the server.  TCP uses connections.  Now, it is
 incorrect to think of a TCP connection as some physical, dedicated wire going from
 google.com to your computer.
 
-Obviously this isn't how the internet works, but I think there's a tendency
+Obviously this isn't how the internet works, but there's a tendency
 to think of the abstraction in that way.  In reality a connection is nothing more
-than a 4-tuple: (source ip address, source port, destination ip, destination port).
+than a 4-tuple: (source ip, source port, destination ip, destination port).
 This 4-tuple also uniquely defines a socket.  Any socket with a field differing
 in any one of these values is a different socket.
 
@@ -52,7 +52,9 @@ ip address 55.55.55.55.  Now two clients establish connections to our server:
 Each connection has the same destination IP and destination port since they
 are connecting to the same website.  Each of these connections however defines
 a different socket since they have different source addresses.  A server such
-as Apache will spawn a new thread or process to serve each of these conncetions.
+as Apache will spawn a new thread or process to serve each of these connections.
+The OS will provide a separate interface to access each of these sockets, and
+each socket will use a separate file descriptor.
 
 ## Blocking TCP Server in Python
 
@@ -127,7 +129,7 @@ via events.  They typically use an event notification mechanism in Linux called
 epoll.
 
 The typical way then that a server uses epoll is to create an epoll object,
-specifying which events to monitor for specific sockets.  Then loop infinitely
+specifying which events to monitor for specific sockets.  Then the server loops infinitely
 asking the epoll object for a list of events that have occurred since the last
 query.  Based on which readiness events occur, actions are performed on sockets that
 are ready for those events and the epoll object is modified to listen for
