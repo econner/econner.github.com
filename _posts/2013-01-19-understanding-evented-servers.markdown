@@ -58,7 +58,8 @@ each socket will use a separate file descriptor.
 
 ## Blocking TCP Server in Python
 
-The following simple server example taken from http://scotdoyle.com/python-epoll-howto.html
+The following simple server example taken from
+[Scot Doyle's epoll Tutorial](http://scotdoyle.com/python-epoll-howto.html)
 does not use threading, but illustrates how a server accepts connections
 and where it could spawn off a new process to handle each connection.
 
