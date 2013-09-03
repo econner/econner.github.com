@@ -84,6 +84,7 @@ h2.sectionTitle {
      * In the absence of language-enforced guarantees, mistakes will happen.
      * The more possible in a language the harder it is to understand.
 
+
 <h2 class="sectionTitle">V. Classical approaches to managing complexity</h2>
 
 * Object-Orientation
