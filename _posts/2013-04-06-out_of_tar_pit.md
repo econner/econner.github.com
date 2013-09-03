@@ -87,6 +87,7 @@ h2.sectionTitle {
 
 <h2 class="sectionTitle">V. Classical approaches to managing complexity</h2>
 
+
 * Object-Orientation
   * State access procedures must enforce constraint for every piece of state manipulated
   * Where does constraint enforcement go for multiple-object relationships?
