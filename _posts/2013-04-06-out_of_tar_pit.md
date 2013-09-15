@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Out of the Tar Pit
+title: An Outline of Out of the Tar Pit
 ---
 
 # {{page.title}}
