@@ -5,7 +5,7 @@ title: An Outline of The Timed Asynchronous Distributed Model
 
 # {{page.title}}
 
-<span class="meta">September 15 2013</span>
+<span class="meta">September 15, 2013</span>
 
 <style>
 p {

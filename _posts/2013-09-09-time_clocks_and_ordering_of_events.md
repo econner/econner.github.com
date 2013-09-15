@@ -5,7 +5,7 @@ title: An Outline of Time Clocks and the Ordering of Events
 
 # {{page.title}}
 
-<span class="meta">April 6 2013</span>
+<span class="meta">September 9, 2013</span>
 
 <style>
 p {
