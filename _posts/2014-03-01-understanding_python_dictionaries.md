@@ -24,7 +24,8 @@ used to find a slot in the array to place the new entry.
 
 <h2 class="sectionTitle">The Hash</h2>
 
-Python lets you use seemingly arbitrary objects as keys to dictionaries:
+Python lets you use seemingly arbitrary objects as keys to dictionaries by
+utilizing the object's ``__hash__`` method:
 
 {% highlight python %}
 >>> myobj = object()
