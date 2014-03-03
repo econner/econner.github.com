@@ -83,11 +83,12 @@ of the dictionary (which must be a power of 2) minus 1.  The bitwise representat
 of 2^n - 1 is always a sequence of 1's so the mask will zero out all bits except
 the lower order n-1 bits.
 
-For example, to find a slot for the key 'abc' (with value 5),
+For example, say we want to insert the key 'abc' with value 5.  We first need to find
+an empty slot in the hash table,
 
 {% highlight python %}
 >>> hash("abc") & (8 - 1)
-5
+3
 # http://stackoverflow.com/questions/2267362/
 >>> int2base(hash("abc"), 2)
 '...0101000010100000100100111101000010100011' # lower 3 bits are '011'
