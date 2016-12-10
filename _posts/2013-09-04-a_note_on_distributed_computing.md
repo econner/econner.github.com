@@ -1,6 +1,7 @@
 ---
 layout: post
 title: An Outline of A Note on Distributed Computing
+category: notes
 ---
 
 # {{page.title}}

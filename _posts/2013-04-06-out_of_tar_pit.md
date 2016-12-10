@@ -1,6 +1,7 @@
 ---
 layout: post
 title: An Outline of Out of the Tar Pit
+category: notes
 ---
 
 # {{page.title}}

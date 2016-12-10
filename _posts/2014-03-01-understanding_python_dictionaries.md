@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Understanding Python Dictionaries
+category: writing
 ---
 
 <span class="meta">March 01, 2014</span>

@@ -1,6 +1,7 @@
 ---
 layout: post
 title: An Outline of The Timed Asynchronous Distributed Model
+category: notes
 ---
 
 # {{page.title}}

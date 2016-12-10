@@ -1,6 +1,7 @@
 ---
 layout: post
 title: An Outline of Time Clocks and the Ordering of Events
+category: notes
 ---
 
 # {{page.title}}

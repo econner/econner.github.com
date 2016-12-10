@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Latent Dirichlet Allocation 
+category: writing
 ---
 
 

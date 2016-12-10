@@ -1,6 +1,7 @@
 ---
 layout: post
 title: An Outline of Paxos Made Simple
+category: notes
 ---
 
 <span class="meta">September 22, 2013</span>
