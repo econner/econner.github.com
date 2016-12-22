@@ -4,10 +4,6 @@ title: Latent Dirichlet Allocation
 category: writing
 ---
 
-
-
-Recently it has become important for me to learn some things about Latent Dirichlet Allocation for work.  I know very little about statistics and even less about topic modeling so this blog represents my attempt to explain LDA intuitively from the ground up.
-
 <h2 class="sectionTitle">What is Latent Dirichlet Allocation?</h2>
 
 LDA automatically discovers topics contained in a collection of documents.  A document is a mixture of topics and each topic is a mixture of words.
@@ -96,8 +92,5 @@ The beta distribution is the conjugate prior for the likelihood function of the 
 <h3>On to Dirichlet</h3>
 
 The Dirichlet distribution is the multi-dimensional generalization of the Beta distribution.  It describes the probability distribution of the likelihoods of each value a variable can take on for a variable that can take on multiple values.  For example, you might sample from a Dirichlet distribution to get an estimate for the weights of the sides of a die (or the probabilities with which each of a set of topics occurs in a document...).  A sample drawn from a Dirichlet distribution gives you a multinomial distribution analagous to a sample from a Beta distribution which gives a binomial distribution.
-
-<h2 class="sectionTitle">Learning the LDA Model</h2>
-
 
 
